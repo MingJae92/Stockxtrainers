@@ -25,7 +25,7 @@ const connectDB= async()=>{
 }
 const app = express()
 const route = express.Router();
-const port = 8000
+const port = process.env.SERVERPORT
 connectDB()
 const postSchema= new mongoose.Schema({
     id:{
@@ -134,7 +134,6 @@ app.get("/products",(req, res, next)=>{
 
     })
 } )
-
 
 
 app.listen(port, ()=>{
