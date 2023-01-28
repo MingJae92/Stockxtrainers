@@ -1,35 +1,15 @@
 import express from 'express'
 import mongoose from 'mongoose';
 import dotenv from 'dotenv'
-// dotenv.config()
+dotenv.config()
 import axios from 'axios';
 
 import SneaksAPI from 'sneaks-api';
-const sneaks = new SneaksAPI();
 
-sneaks.getProducts("Yeezy Cinder", 10, function(err, products){
-    console.log(products)
-    
-})
 
-// const options = {
-//     method: 'GET',
-//     url: 'https://sneaker-database-stockx.p.rapidapi.com/getproducts',
-//     params: {keywords: 'yeezy', limit: '5'},
-//     headers: {
-//       'X-RapidAPI-Key': 'b6fe66457emsh4697128ce1ce2f7p1b9674jsndf2dfc234504',
-//       'X-RapidAPI-Host': 'sneaker-database-stockx.p.rapidapi.com'
-//     }
-//   };
+console.log(process.env.SERVERPORT )
 
-//   axios.request(options).then(function (response) {
-// 	console.log(response.data);
-//     console.log("Rapid API data")
-// }).catch(function (error) {
-// 	console.error(error);
-// });
-
-const mongoDBConnection = "mongodb+srv://Legend:mingchiwong1992@cluster0.rhgz1j3.mongodb.net/?retryWrites=true&w=majority"
+const mongoDBConnection = process.env.MONG_DB_CONNECTION
 const connectDB= async()=>{
     try {
          mongoose.connect(mongoDBConnection, {
@@ -47,7 +27,11 @@ const app = express()
 const route = express.Router();
 const port = 8000
 connectDB()
-const postSchema= New mongoose.Schema({
+const postSchema= new mongoose.Schema({
+    id:{
+        type: String,
+        required: true
+    },
     shoeName:{
         type: String,
         required: true
@@ -77,12 +61,12 @@ const postSchema= New mongoose.Schema({
         required: true
     },
     releaseDate:{
-        type: Number,
+        type: String,
         required: true
     },
     description:{
         type:String,
-        required: true
+        required: false
     },
     lowestResellPrice:{
         stock:{
@@ -100,8 +84,58 @@ const postSchema= New mongoose.Schema({
     }
 })
 
-const post = mongoose.model("Post", postSchema)
+// const post = mongoose.model("Post", postSchema)
 app.use("/v1", route);
+
+
+app.get("/products",(req, res, next)=>{
+    const sneaks = new SneaksAPI();
+
+    sneaks.getProducts("Yeezy Cinder", 10, function(err, products){
+        if(err){
+            next(err)
+        }else{
+            console.log(products)
+            const Sneaker = mongoose.model("Sneaker", postSchema)
+            const newSneakers = []
+            for(let i=0; i<products.length; i++){
+                const newSneaker = new Sneaker ({
+                    id: products[i]._id,
+                    shoeName:products[i].shoeName,
+                    brand:products[i].brand,
+                    silhoutte:products[i].silhoutte,
+                    styleID:products[i].styleID,
+                    make:products[i].make,
+                    colorway:products[i].colorway,
+                    retailPrice: products[i].retailPrice,
+                    releaseDate:products[i].releaseDate,
+                    description:products[i].description ?? "default description",
+                    lowestResellPrice:{
+                        stock:products[i].lowestResellPrice.stockX,
+                        flightClub:products[i].lowestResellPrice.flightClub,
+                        goat:products[i].lowestResellPrice.goat,
+                    }
+                })
+                newSneakers.push(newSneaker)
+            }
+            Sneaker.insertMany(newSneakers, function(err) {
+                if(err){
+                    next(err)
+                }else{
+                    console.log("Sneakers inserted! " + newSneakers.length)
+                    res.send("Sneakers updated!")
+                }
+            });
+            
+            
+        }
+        
+        
+
+    })
+} )
+
+
 
 app.listen(port, ()=>{
     console.log(`Server connected, listening on port ${port} here we go!`);
