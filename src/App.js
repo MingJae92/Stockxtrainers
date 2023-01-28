@@ -5,13 +5,7 @@ import axios from "axios"
 const App=()=> {
   const [trainer, setTrainer] = useState([]);
 
-  // axios.get("https://goat2.p.rapidapi.com/product/details/url/air-jordan-3-retro-se-canvas-dh7139-100").then((res)=>{
-  //   console.log(res);
-  //   const myRes = res.data;
-  //   setTrainer(myRes)
-  // })
-
-  // useEffect(()=>App(),[]);
+  axios.get("")
   
   
   return (
