@@ -1,11 +1,9 @@
-import express from 'express'
+import express, { query } from 'express'
 import mongoose from 'mongoose';
 import dotenv from 'dotenv'
 dotenv.config()
-import axios from 'axios';
 
 import SneaksAPI from 'sneaks-api';
-
 
 console.log(process.env.SERVERPORT )
 
@@ -83,12 +81,12 @@ const postSchema= new mongoose.Schema({
         }
     }
 })
-
+const Sneaker = mongoose.model("Sneaker", postSchema)
 // const post = mongoose.model("Post", postSchema)
 app.use("/v1", route);
 
 
-app.get("/products",(req, res, next)=>{
+app.get("/pollProductData",(req, res, next)=>{
     const sneaks = new SneaksAPI();
 
     sneaks.getProducts("Yeezy Cinder", 10, function(err, products){
@@ -96,7 +94,7 @@ app.get("/products",(req, res, next)=>{
             next(err)
         }else{
             console.log(products)
-            const Sneaker = mongoose.model("Sneaker", postSchema)
+            
             const newSneakers = []
             for(let i=0; i<products.length; i++){
                 const newSneaker = new Sneaker ({
@@ -126,14 +124,39 @@ app.get("/products",(req, res, next)=>{
                     res.send("Sneakers updated!")
                 }
             });
-            
-            
+               
         }
         
-        
-
     })
 } )
+
+app.get("/queryProductData", (req,res)=>{
+    if(req.query){
+        let id = req.query.id;
+        console.log(id)
+    }
+    
+
+    // const Id = mongoose.model("id", Sneaker)
+    // Id.findOne({"id":"63d577ab75e3c6cffe8ce42e"}, (err, id)=>{
+    //     if(err){ 
+    //         return handleError(err)
+    //     }else{
+    //         return id 
+    //     }
+    // })
+    // res.send(data)
+
+    Sneaker.exists({"id":"63d577ab75e3c6cffe8ce42e"}, (err, doc)=>{
+        if(err){
+            console.log(err)
+        }else{
+            console.log("Result :" , doc)
+        }
+    res.send(doc)
+    })
+}), 
+
 
 
 app.listen(port, ()=>{
