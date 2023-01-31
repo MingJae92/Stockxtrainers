@@ -5,79 +5,79 @@ dotenv.config()
 
 import SneaksAPI from 'sneaks-api';
 
-console.log(process.env.SERVERPORT )
+console.log(process.env.SERVERPORT)
 
 const mongoDBConnection = process.env.MONG_DB_CONNECTION
-const connectDB= async()=>{
+const connectDB = async () => {
     try {
-         mongoose.connect(mongoDBConnection, {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
+        mongoose.connect(mongoDBConnection, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
         });
         console.log('Database connected');
-      } catch (err) {
+    } catch (err) {
         console.log(err);
         process.exit(1);
-      }
+    }
 
 }
 const app = express()
 const route = express.Router();
 const port = process.env.SERVERPORT
 connectDB()
-const postSchema= new mongoose.Schema({
-    id:{
+const postSchema = new mongoose.Schema({
+    id: {
         type: String,
         required: true
     },
-    shoeName:{
+    shoeName: {
         type: String,
         required: true
     },
-    brand:{
+    brand: {
         type: String,
         required: true
     },
-    silhoutte:{
+    silhoutte: {
         type: String,
         required: true
     },
-    styleID:{
+    styleID: {
         type: String,
         required: true
     },
-    make:{
+    make: {
         type: String,
-        require:true
+        require: true
     },
-    colorway:{
+    colorway: {
         type: String,
-        required:true
+        required: true
     },
     retailPrice: {
         type: Number,
         required: true
     },
-    releaseDate:{
+    releaseDate: {
         type: String,
         required: true
     },
-    description:{
-        type:String,
+    description: {
+        type: String,
         required: false
     },
-    lowestResellPrice:{
-        stock:{
+    lowestResellPrice: {
+        stock: {
             type: Number,
-            required:true
+            required: true
         },
-        flightClub:{
+        flightClub: {
             type: Number,
-            required:true
+            required: true
         },
-        goat:{
+        goat: {
             type: Number,
-            required:true
+            required: true
         }
     }
 })
@@ -86,82 +86,89 @@ const Sneaker = mongoose.model("Sneaker", postSchema)
 app.use("/v1", route);
 
 
-app.get("/pollProductData",(req, res, next)=>{
+app.get("/pollProductData", (req, res, next) => {
     const sneaks = new SneaksAPI();
 
-    sneaks.getProducts("Yeezy Cinder", 10, function(err, products){
-        if(err){
+    sneaks.getProducts("Yeezy Cinder", 10, function (err, products) {
+        if (err) {
             next(err)
-        }else{
+        } else {
             console.log(products)
-            
+
             const newSneakers = []
-            for(let i=0; i<products.length; i++){
-                const newSneaker = new Sneaker ({
+            for (let i = 0; i < products.length; i++) {
+                const newSneaker = new Sneaker({
                     id: products[i]._id,
-                    shoeName:products[i].shoeName,
-                    brand:products[i].brand,
-                    silhoutte:products[i].silhoutte,
-                    styleID:products[i].styleID,
-                    make:products[i].make,
-                    colorway:products[i].colorway,
+                    shoeName: products[i].shoeName,
+                    brand: products[i].brand,
+                    silhoutte: products[i].silhoutte,
+                    styleID: products[i].styleID,
+                    make: products[i].make,
+                    colorway: products[i].colorway,
                     retailPrice: products[i].retailPrice,
-                    releaseDate:products[i].releaseDate,
-                    description:products[i].description ?? "default description",
-                    lowestResellPrice:{
-                        stock:products[i].lowestResellPrice.stockX,
-                        flightClub:products[i].lowestResellPrice.flightClub,
-                        goat:products[i].lowestResellPrice.goat,
+                    releaseDate: products[i].releaseDate,
+                    description: products[i].description ?? "default description",
+                    lowestResellPrice: {
+                        stock: products[i].lowestResellPrice.stockX,
+                        flightClub: products[i].lowestResellPrice.flightClub,
+                        goat: products[i].lowestResellPrice.goat,
                     }
                 })
                 newSneakers.push(newSneaker)
             }
-            Sneaker.insertMany(newSneakers, function(err) {
-                if(err){
+            Sneaker.insertMany(newSneakers, function (err) {
+                if (err) {
                     next(err)
-                }else{
+                } else {
                     console.log("Sneakers inserted! " + newSneakers.length)
                     res.send("Sneakers updated!")
                 }
             });
-               
+
         }
-        
+        // Sneaker.exists({id:"63d577ab75e3c6cffe8ce42e"}, (err, doc)=>{
+        //     if(err){
+        //         console.log(err)
+        //     }else{
+        //         console.log("Result :" , doc)
+        //     }
+        // res.send(doc)
+        // })
+
     })
-} )
-
-app.get("/queryProductData", (req,res)=>{
-    if(req.query){
-        let id = req.query.id;
-        console.log(id)
-    }
-    
-
-    // const Id = mongoose.model("id", Sneaker)
-    // Id.findOne({"id":"63d577ab75e3c6cffe8ce42e"}, (err, id)=>{
-    //     if(err){ 
-    //         return handleError(err)
-    //     }else{
-    //         return id 
-    //     }
-    // })
-    // res.send(data)
-
-    Sneaker.exists({"id":"63d577ab75e3c6cffe8ce42e"}, (err, doc)=>{
-        if(err){
-            console.log(err)
-        }else{
-            console.log("Result :" , doc)
-        }
-    res.send(doc)
-    })
-}), 
-
-
-
-app.listen(port, ()=>{
-    console.log(`Server connected, listening on port ${port} here we go!`);
 })
+
+app.get("/queryProductData", (req, res) => {
+    const filter = {}
+    if (req.query) {
+        const brand = req.query.brand
+        const shoeName = req.query.shoeName
+        if(shoeName){
+            const shoeNameQuery = shoeName
+            const re = RegExp(shoeNameQuery, "i")
+            filter.shoeName = re
+        }
+        if (brand) {
+            filter.brand = brand
+        }
+    }
+
+    Sneaker.find(filter, (err, docs) => {
+        if (err) {
+            console.log(err)
+        } else {
+          
+        }
+        res.send(docs)
+
+    })
+
+
+}),
+
+    app.listen(port, () => {
+        console.log(`Server connected, listening on port ${port} here we go!`);
+    })
 
 
 
