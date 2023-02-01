@@ -26,9 +26,10 @@ const route = express.Router();
 const port = process.env.SERVERPORT
 connectDB()
 const postSchema = new mongoose.Schema({
-    id: {
+
+    _id: {
         type: String,
-        required: true
+        unique: true
     },
     shoeName: {
         type: String,
@@ -98,7 +99,7 @@ app.get("/pollProductData", (req, res, next) => {
             const newSneakers = []
             for (let i = 0; i < products.length; i++) {
                 const newSneaker = new Sneaker({
-                    id: products[i]._id,
+                    _id: products[i]._id,
                     shoeName: products[i].shoeName,
                     brand: products[i].brand,
                     silhoutte: products[i].silhoutte,
@@ -116,7 +117,9 @@ app.get("/pollProductData", (req, res, next) => {
                 })
                 newSneakers.push(newSneaker)
             }
+            
             Sneaker.insertMany(newSneakers, function (err) {
+                
                 if (err) {
                     next(err)
                 } else {
@@ -125,15 +128,17 @@ app.get("/pollProductData", (req, res, next) => {
                 }
             });
 
-        }
-        // Sneaker.exists({id:"63d577ab75e3c6cffe8ce42e"}, (err, doc)=>{
-        //     if(err){
-        //         console.log(err)
-        //     }else{
-        //         console.log("Result :" , doc)
-        //     }
-        // res.send(doc)
-        // })
+        }   
+            // Sneaker.exists({id:"63d577ab75e3c6cffe8ce42e"}, (err, doc)=>{
+            //     if(err){
+            //         console.log(err)
+            //     }else{
+            //         console.log("Result :" , doc)
+            //     }
+            // res.send(doc)
+            // })
+
+           
 
     })
 })
@@ -170,5 +175,13 @@ app.get("/queryProductData", (req, res) => {
         console.log(`Server connected, listening on port ${port} here we go!`);
     })
 
+    // Sneaker.aggregate(postSchema);
+    // if(Sneaker===null){
+    //     console.log("Sneakers entry add!" + newSneakers.length)
+    //     res.send("Sneakers entry updated!")
+    // }else{
+    //     console.log("You have a duplicate entry!")
+    //     res.send(newSneakers)
+    // }
 
-
+    
