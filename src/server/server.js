@@ -26,10 +26,10 @@ const route = express.Router();
 const port = process.env.SERVERPORT
 connectDB()
 const postSchema = new mongoose.Schema({
-
-    _id: {
+    
+    goatProductId: {
         type: String,
-        unique: true
+        required: true
     },
     shoeName: {
         type: String,
@@ -98,8 +98,8 @@ app.get("/pollProductData", (req, res, next) => {
 
             const newSneakers = []
             for (let i = 0; i < products.length; i++) {
-                const newSneaker = new Sneaker({
-                    _id: products[i]._id,
+                const newSneaker = {
+                    goatProductId: products[i].goatProductId,
                     shoeName: products[i].shoeName,
                     brand: products[i].brand,
                     silhoutte: products[i].silhoutte,
@@ -114,19 +114,33 @@ app.get("/pollProductData", (req, res, next) => {
                         flightClub: products[i].lowestResellPrice.flightClub,
                         goat: products[i].lowestResellPrice.goat,
                     }
-                })
+                }
                 newSneakers.push(newSneaker)
             }
             
-            Sneaker.insertMany(newSneakers, function (err) {
-                
-                if (err) {
-                    next(err)
-                } else {
-                    console.log("Sneakers inserted! " + newSneakers.length)
-                    res.send("Sneakers updated!")
+            Sneaker.bulkWrite(newSneakers.map(doc => ({
+                updateOne: {
+                    filter: {
+                        goatProductId: doc.goatProductId
+                    }, 
+                    update: doc, 
+                    upsert: true
                 }
-            });
+            }))).then((updateResponse)=>{
+                console.log(updateResponse.insertedCount, updateResponse.modifiedCount)
+                res.send("Sneakers updated! Updated: " + updateResponse.modifiedCount + " inserted: " + updateResponse.insertedCount)
+            })
+
+
+            // Sneaker.insertMany(newSneakers, function (err) {
+                
+            //     if (err) {
+            //         next(err)
+            //     } else {
+            //         console.log("Sneakers inserted! " + newSneakers.length)
+            //         res.send("Sneakers updated!")
+            //     }
+            // });
 
         }   
             // Sneaker.exists({id:"63d577ab75e3c6cffe8ce42e"}, (err, doc)=>{
