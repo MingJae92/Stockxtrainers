@@ -2,11 +2,10 @@ import express, { query } from 'express'
 import mongoose from 'mongoose';
 import dotenv from 'dotenv'
 dotenv.config()
-
 import SneaksAPI from 'sneaks-api';
 
 console.log(process.env.SERVERPORT)
-
+//Mongo DB is now setting up a connection to the DB.
 const mongoDBConnection = process.env.MONG_DB_CONNECTION
 const connectDB = async () => {
     try {
@@ -25,8 +24,10 @@ const app = express()
 const route = express.Router();
 const port = process.env.SERVERPORT
 connectDB()
+
+//Schema created for data to be stored as docs
 const postSchema = new mongoose.Schema({
-    
+
     goatProductId: {
         type: String,
         required: true
@@ -82,11 +83,13 @@ const postSchema = new mongoose.Schema({
         }
     }
 })
+
+//Mongoose then creates a model for the schema
 const Sneaker = mongoose.model("Sneaker", postSchema)
 // const post = mongoose.model("Post", postSchema)
 app.use("/v1", route);
 
-
+//Get request to fetch data from SneakersAPI
 app.get("/pollProductData", (req, res, next) => {
     const sneaks = new SneaksAPI();
 
@@ -94,8 +97,9 @@ app.get("/pollProductData", (req, res, next) => {
         if (err) {
             next(err)
         } else {
-            console.log(products)
-
+            // console.log(products)
+            //For loop used to iterate through the fetched data from Sneakers API
+            //newSneakers variable declared as empty for fetched API data to be store later.
             const newSneakers = []
             for (let i = 0; i < products.length; i++) {
                 const newSneaker = {
@@ -115,54 +119,36 @@ app.get("/pollProductData", (req, res, next) => {
                         goat: products[i].lowestResellPrice.goat,
                     }
                 }
+                //Sneakers API fetched results now stored into newSneakers. 
                 newSneakers.push(newSneaker)
             }
-            
+            //Mongo DB then checks for any duplicate entries.
             Sneaker.bulkWrite(newSneakers.map(doc => ({
                 updateOne: {
                     filter: {
                         goatProductId: doc.goatProductId
-                    }, 
-                    update: doc, 
+                    },
+                    update: doc,
                     upsert: true
                 }
-            }))).then((updateResponse)=>{
-                console.log(updateResponse.insertedCount, updateResponse.modifiedCount)
-                res.send("Sneakers updated! Updated: " + updateResponse.modifiedCount + " inserted: " + updateResponse.insertedCount)
+            }))).then((updateResponse) => {
+                console.log(updateResponse)
+                res.send("Sneakers updated! Updated: \n" + JSON.stringify(updateResponse))
             })
-
-
-            // Sneaker.insertMany(newSneakers, function (err) {
-                
-            //     if (err) {
-            //         next(err)
-            //     } else {
-            //         console.log("Sneakers inserted! " + newSneakers.length)
-            //         res.send("Sneakers updated!")
-            //     }
-            // });
-
-        }   
-            // Sneaker.exists({id:"63d577ab75e3c6cffe8ce42e"}, (err, doc)=>{
-            //     if(err){
-            //         console.log(err)
-            //     }else{
-            //         console.log("Result :" , doc)
-            //     }
-            // res.send(doc)
-            // })
-
-           
+        }
 
     })
 })
 
 app.get("/queryProductData", (req, res) => {
+    //filter variable is currently empty used for later. 
     const filter = {}
+    //If statement used to check for queries.
     if (req.query) {
         const brand = req.query.brand
         const shoeName = req.query.shoeName
-        if(shoeName){
+        // We now check to see if there are any queries for shoeName and brand.
+        if (shoeName) {
             const shoeNameQuery = shoeName
             const re = RegExp(shoeNameQuery, "i")
             filter.shoeName = re
@@ -171,31 +157,23 @@ app.get("/queryProductData", (req, res) => {
             filter.brand = brand
         }
     }
-
+    //We are now filtering our model by brand and shoe name and searching through the database to see if there are any matches for the queries. 
     Sneaker.find(filter, (err, docs) => {
         if (err) {
             console.log(err)
         } else {
-          
+
         }
         res.send(docs)
 
     })
 
+})
 
-}),
+app.listen(port, () => {
+    console.log(`Server connected, listening on port ${port} here we go!`);
+})
 
-    app.listen(port, () => {
-        console.log(`Server connected, listening on port ${port} here we go!`);
-    })
 
-    // Sneaker.aggregate(postSchema);
-    // if(Sneaker===null){
-    //     console.log("Sneakers entry add!" + newSneakers.length)
-    //     res.send("Sneakers entry updated!")
-    // }else{
-    //     console.log("You have a duplicate entry!")
-    //     res.send(newSneakers)
-    // }
 
-    
+
